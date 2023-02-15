@@ -23,6 +23,8 @@ public:
 	unordered_map<string, User>& GetUserInfoMap();
 	map<string, Room>& GetRoomInfoMap();
 
+	void UserQuitServer(User& objUser);
+
 private:
 
 	unordered_map<string, User> m_userInfoMap; // key: ID, value: IP + port

@@ -4,7 +4,7 @@
 
 #include <string>
 #include <string.h>
-#include <list>
+#include <map>
 
 using namespace std;
 
@@ -29,12 +29,12 @@ public:
 	void SetParticipantMaxNum(int value);
 	int GetParticipantMaxNum();
 
-	string& GetRoomTitle();
+	const string& GetRoomTitle();
 	void SetRoomTitle(string value);
 
-	list<User>& GetParticipantList();
+	map<string, User>& GetParticipantMap();
 
-	void SetRoomInfo(int roomNumber, int participantNum, int participantMaxNum, string& roomTitle);
+	void SetRoomInfo(int roomNumber, int participantNum, int participantMaxNum, const string& roomTitle);
 
 	bool GetbFull();
 
@@ -44,5 +44,5 @@ private:
 	int m_participantNum;
 	int m_participantMaxNum;
 	string m_roomTitle;
-	list<User> m_participantList;
+	map<string, User> m_participantMap;
 };

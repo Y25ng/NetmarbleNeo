@@ -78,6 +78,24 @@ void User::SetRoomNumber(int value)
 	m_roomNumber = value;
 }
 
+const string& User::GetRoomTitle()
+{
+	return m_roomTitle;
+}
+
+void User::SetRoomTitle( const string& value)
+{
+	m_roomTitle = value;
+}
+
+bool User::operator==( const User& user)
+{
+	if (m_id == user.m_id)
+		return true;
+	else
+		return false;
+}
+
 
 
 

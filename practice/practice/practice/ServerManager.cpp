@@ -62,3 +62,22 @@ map<string, Room>& ServerManager::GetRoomInfoMap()
 {
 	return m_roomInfoMap;
 }
+
+void ServerManager::UserQuitServer(User& objUser)
+{
+	m_userInfoMap.erase(objUser.GetID()); // 접속 종료시 접속자 명단에서 삭제
+
+	auto iter = m_roomInfoMap.find(objUser.GetRoomTitle());
+
+	if (iter != m_roomInfoMap.end())
+	{
+		User delUser = objUser;
+		m_roomInfoMap[iter->first].SetParticipantNum(m_roomInfoMap[iter->first].GetParticipantNum() - 1);
+		m_roomInfoMap[iter->first].GetParticipantMap().erase(objUser.GetID());
+
+		if ( m_roomInfoMap[iter->first].GetParticipantMap().size() == 0 )
+		{
+			m_roomInfoMap.erase(iter->first);
+		}
+	}
+}

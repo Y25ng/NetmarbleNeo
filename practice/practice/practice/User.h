@@ -41,6 +41,11 @@ public:
 	int GetRoomNumber();
 	void SetRoomNumber(int value);
 
+	const string& GetRoomTitle();
+	void SetRoomTitle(const string& value);
+
+	bool operator==(const User& user);
+
 private:
 
 	string m_id;
@@ -51,6 +56,7 @@ private:
 	bool m_bInRoom;
 
 	int m_roomNumber;
+	string m_roomTitle;
 
 	unsigned int m_sock;
 };

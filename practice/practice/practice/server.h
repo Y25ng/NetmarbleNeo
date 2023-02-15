@@ -13,11 +13,13 @@ enum eCommand
 {
 
 	ONECOMMANDONEPARAMETER = 2,
+	MINNUMFORROOM = 2,
 	ONECOMMANDTWOPARAMETER = 3,
 	ONLYCOMMAND_ONE = 3,
 	ONLYCOMMAND_TWO = 4,
 
 	MINLENGTHLOGINPOSSIBLE = 7,
+	MAXNUMFORROOM = 20,
 };
 
 enum eRet
@@ -65,6 +67,8 @@ enum eSendMapKey
 	CREATEROOM,
 	ROOMFULL,
 
+	CANTCREATEROOMBYNUM,
+	CANTCREATEROOMBYTITLE
 };
 
 struct sPrintOrSend
@@ -136,6 +140,11 @@ struct sPrintOrSend
 			= "** 대화방이 개설되었습니다.\n\r";
 		sendMap[eSendMapKey::ROOMFULL]
 			= "** 인원이 꽉 차서 참여할 수 없습니다.\n\r";
+
+		sendMap[eSendMapKey::CANTCREATEROOMBYNUM]
+			= "** 방 최대 인원은 2명 이상 20명 이하만 가능합니다.\n\r";
+		sendMap[eSendMapKey::CANTCREATEROOMBYTITLE]
+			= "** 방 이름을 입력해주세요.\n\r";
 	}
 
 	unordered_map<int, string> printMap;

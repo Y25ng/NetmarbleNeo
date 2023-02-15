@@ -25,4 +25,17 @@ vector<string> Util::split(string str, char delimiter)
 	return vs;
 }
 
+bool Util::bCanUsestoi(string& str)
+{
+	for (int i = 0; i < str.size(); i++)
+	{
+		if (!((int)str[i] - '0' >= 0 && (int)str[i] - '0' <= 9))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
 

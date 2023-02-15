@@ -31,7 +31,7 @@ void Room::SetParticipantMaxNum(int value)
 	m_participantMaxNum = value;
 }
 
-string& Room::GetRoomTitle()
+const string& Room::GetRoomTitle()
 {
 	return m_roomTitle;
 }
@@ -41,12 +41,12 @@ void Room::SetRoomTitle(string value)
 	m_roomTitle = value;
 }
 
-list<User>& Room::GetParticipantList()
+map<string, User>& Room::GetParticipantMap()
 {
-	return m_participantList;
+	return m_participantMap;
 }
 
-void Room::SetRoomInfo(int roomNumber, int participantNum, int participantMaxNum, string& roomTitle)
+void Room::SetRoomInfo(int roomNumber, int participantNum, int participantMaxNum, const string& roomTitle)
 {
 	m_roomNumber = roomNumber;
 	m_participantNum = participantNum;

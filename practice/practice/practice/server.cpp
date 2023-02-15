@@ -218,11 +218,19 @@ DWORD WINAPI ProcessClient(LPVOID arg)
 		retval = recvline(client_sock, buf, BUFSIZE);
 		if (retval == SOCKET_ERROR) 
 		{
+			// 접속 종료시 접속자 명단에서 삭제 
+			// 접속 종료시 방 명단에서 삭제
+			objServerManager.UserQuitServer(objUser); 
+
 			err_display("recv()");
 			break;
 		}
 		else if (retval == eRet::EMPTYMESSAGE)
 		{
+			// 접속 종료시 접속자 명단에서 삭제 
+			// 접속 종료시 방 명단에서 삭제
+			objServerManager.UserQuitServer(objUser);
+
 			break;
 		}
 
@@ -275,9 +283,9 @@ DWORD WINAPI ProcessClient(LPVOID arg)
 			// 1개 명령과 1개 이상의 인자값이 존재
 			if (tempBufSplit_Vec.size() >= eCommand::ONECOMMANDONEPARAMETER)
 			{
-				// 명령: O && 2개 이상의 인자값이 존재
+				// 명령: O && 2개 이상의 인자값이 존재 && 최대 인원수에 숫자가 아닌 문자가 들어오지 않았을 때
 				// => 방 개설 명령
-				if (tempBufSplit_Vec[0] == "O" && tempBufSplit_Vec.size() >= eCommand::ONECOMMANDTWOPARAMETER)
+				if (tempBufSplit_Vec[0] == "O" && tempBufSplit_Vec.size() >= eCommand::ONECOMMANDTWOPARAMETER && Util::bCanUsestoi(tempBufSplit_Vec[1]))
 				{
 					// 방 최대 인원수  
 					int tempMaxNum = stoi(tempBufSplit_Vec[1]);
@@ -287,11 +295,13 @@ DWORD WINAPI ProcessClient(LPVOID arg)
 
 					for (int i = 2; i < tempBufSplit_Vec.size(); i++)
 					{
-						tempRoomTitle += tempBufSplit_Vec[i];
+						tempRoomTitle += tempBufSplit_Vec[i] + "";
 					}
 
+					tempRoomTitle = tempRoomTitle.substr(0, tempRoomTitle.size() - 1);
+
 					// 방 최대 인원수 제한 만족 && 방 제목이 공백이 아닐 때
-					if (tempMaxNum >= 2 && tempMaxNum <= 20 && tempRoomTitle != "")
+					if (tempMaxNum >= eCommand::MINNUMFORROOM && tempMaxNum <= eCommand::MAXNUMFORROOM && tempRoomTitle != "\r")
 					{
 						Room objRoom;
 
@@ -299,9 +309,10 @@ DWORD WINAPI ProcessClient(LPVOID arg)
 						objRoom.SetRoomInfo((int)objServerManager.GetRoomInfoMap().size() + 1, 1, tempMaxNum, tempRoomTitle);
 						objUser.SetbInRoom(true);
 						objUser.SetRoomNumber(objRoom.GetRoomNumber());
-						objRoom.GetParticipantList().push_back(objUser);
+						objUser.SetRoomTitle(objRoom.GetRoomTitle());
+						objRoom.GetParticipantMap().emplace(objUser.GetID(), objUser);
 
-						objServerManager.GetRoomInfoMap().emplace(objUser.GetID(), objRoom);
+						objServerManager.GetRoomInfoMap().emplace( objRoom.GetRoomTitle(), objRoom );
 
 						SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::CREATEROOM]);
 
@@ -326,120 +337,143 @@ DWORD WINAPI ProcessClient(LPVOID arg)
 							string tempMessage = objUser.GetID() + "> " + buf;
 
 							// 방에 있는 모든 유저에게 메시지 전송
-							for (auto iter = objRoom.GetParticipantList().begin(); iter != objRoom.GetParticipantList().end(); ++iter)
+							for (auto iter = objRoom.GetParticipantMap().begin(); iter != objRoom.GetParticipantMap().end(); ++iter)
 							{
-								unsigned int tempTargetUserSock = iter->GetSocket();
+								unsigned int tempTargetUserSock = iter->second.GetSocket();
 								SendMessageToClient(tempTargetUserSock, tempMessage);
 							}
 
 							printf("%s:%d [%s] %s", addr, ntohs(clientaddr.sin_port), objUser.GetID().c_str(), buf);
 						}
 					}
+					else // 방 생성 조건에 부합하지 않은 경우
+					{
+						if (!(tempMaxNum >= eCommand::MINNUMFORROOM && tempMaxNum <= eCommand::MAXNUMFORROOM)) // 방 최대 인원수가 잘못 입력된 경우
+						{
+							SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::CANTCREATEROOMBYNUM]);
+						}
+						else // 방 제목이 잘못 입력된 경우
+						{
+							SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::CANTCREATEROOMBYTITLE]);
+						}
+					}
 				}
 				else if (tempBufSplit_Vec[0] == "ST" && tempBufSplit_Vec.size() == eCommand::ONECOMMANDONEPARAMETER) // 대화방 정보
 				{
-					// 입력받은 방 번호
-					int tempRoomNum = stoi(tempBufSplit_Vec[1]);
+					string flagStr = tempBufSplit_Vec[1].substr(0, tempBufSplit_Vec[1].size() - 1);
 
-					// 입력받은 방 번호의 방이 존재할 경우
-					if (objServerManager.GetRoomInfoMap().size() >= tempRoomNum)
+					if (Util::bCanUsestoi(flagStr))
 					{
-						auto iter_objRoom = objServerManager.GetRoomInfoMap().begin();
+						// 입력받은 방 번호
+						int tempRoomNum = stoi(tempBufSplit_Vec[1]);
 
-						for (int i = 0; i < tempRoomNum - 1; i++)
-						{
-							++iter_objRoom;
-						}
+							// 입력받은 방 번호의 방이 존재할 경우
+							if (objServerManager.GetRoomInfoMap().size() >= tempRoomNum)
+							{
+								auto iter_objRoom = objServerManager.GetRoomInfoMap().begin();
 
-						list<User>& temp_ParticipantList = iter_objRoom->second.GetParticipantList();
-						auto iter_tempList = temp_ParticipantList.begin();
+									for (int i = 0; i < tempRoomNum - 1; i++)
+									{
+										++iter_objRoom;
+									}
 
-						string tempStr = "";
+								map<string, User>& temp_ParticipantList = iter_objRoom->second.GetParticipantMap();
+								auto iter_tempList = temp_ParticipantList.begin();
 
-						// 방 정보(방 번호, 인원수, 최대 인원수, 방 이름)
-						tempStr = "[ " + to_string(iter_objRoom->second.GetRoomNumber()) + "]  "
-							+ "( " + to_string(iter_objRoom->second.GetParticipantNum()) + "/" 
-							+ to_string(iter_objRoom->second.GetParticipantMaxNum()) + " )  "
-							+ iter_objRoom->second.GetRoomTitle() + "\n\r"
-							+ "개설시간:  \n\r";
+								string tempStr = "";
 
-						// 참여자 정보(아이디, 참여시간)
-						for (int i = 0; i < temp_ParticipantList.size(); i++)
-						{
-							tempStr += "참여자: " + (*iter_tempList).GetID() + "            참여시간 :\n\r";
-						}
+								// 방 정보(방 번호, 인원수, 최대 인원수, 방 이름)
+								tempStr = "[ " + to_string(iter_objRoom->second.GetRoomNumber()) + "]  "
+									+ "( " + to_string(iter_objRoom->second.GetParticipantNum()) + "/"
+									+ to_string(iter_objRoom->second.GetParticipantMaxNum()) + " )  "
+									+ iter_objRoom->second.GetRoomTitle() + "\n\r"
+									+ "개설시간:  \n\r";
 
-						SendMessageToClient(client_sock, tempStr);
+								// 참여자 정보(아이디, 참여시간)
+								for (int i = 0; i < temp_ParticipantList.size(); i++)
+								{
+									tempStr += "참여자: " + iter_tempList->second.GetID() + "            참여시간 :\n\r";
+								}
+
+								SendMessageToClient(client_sock, tempStr);
+							}
 					}
 				}
 				else if (tempBufSplit_Vec[0] == "J" && tempBufSplit_Vec.size() == eCommand::ONECOMMANDONEPARAMETER) // 대화방 참여
 				{
-					// 입력받은 방 번호
-					int tempRoomNum = stoi(tempBufSplit_Vec[1]);
+					string flagStr = tempBufSplit_Vec[1].substr(0, tempBufSplit_Vec[1].size() - 1);
 
-					if (objServerManager.GetRoomInfoMap().size() >= tempRoomNum)
+					if (Util::bCanUsestoi(flagStr))
 					{
-						auto iter_objRoomInfo = objServerManager.GetRoomInfoMap().begin();
+						// 입력받은 방 번호
+						int tempRoomNum = stoi(tempBufSplit_Vec[1]);
 
-						for (int i = 0; i < tempRoomNum - 1; i++)
+						if (objServerManager.GetRoomInfoMap().size() >= tempRoomNum)
 						{
-							++iter_objRoomInfo;
-						}
+							auto iter_objRoomInfo = objServerManager.GetRoomInfoMap().begin();
 
-						// 유저가 입력한 번호에 해당하는 방 객체
-						Room& temp_objRoom = iter_objRoomInfo->second;
-
-						// 방이 꽉 차지 않았다면
-						if (temp_objRoom.GetbFull())
-						{
-							temp_objRoom.SetParticipantNum(temp_objRoom.GetParticipantNum() + 1);
-							temp_objRoom.GetParticipantList().push_back(objUser);
-							objUser.SetbInRoom(true);
-
-							string tempStr = "** " + objUser.GetID() + "님이 들어오셨습니다. " + "(현재인원" + to_string(temp_objRoom.GetParticipantNum()) + "/ " + to_string(temp_objRoom.GetParticipantMaxNum()) + ")\n\r";
-							printf("%s:%d [%s] %s", addr, ntohs(clientaddr.sin_port), objUser.GetID().c_str(), buf);
-
-							// 방에 있는 모든 인원에게 유저 대화방 참여 메시지 전송
-							for (auto iter_userInRoom = temp_objRoom.GetParticipantList().begin(); iter_userInRoom != temp_objRoom.GetParticipantList().end(); ++iter_userInRoom)
+							for (int i = 0; i < tempRoomNum - 1; i++)
 							{
-								unsigned int tempUserSock = iter_userInRoom->GetSocket();
-								SendMessageToClient(tempUserSock, tempStr);
+								++iter_objRoomInfo;
 							}
 
-							while (true) // 대화방 채팅 시작
+							// 유저가 입력한 번호에 해당하는 방 객체
+							Room& temp_objRoom = iter_objRoomInfo->second;
+
+							// 방이 꽉 차지 않았다면
+							if (temp_objRoom.GetbFull())
 							{
-								// 데이터 받기
-								retval = recvline(client_sock, buf, BUFSIZE);
-								if (retval == SOCKET_ERROR) {
-									err_display("recv()");
-									break;
-								}
-								else if (retval == 0)
-									break;
+								temp_objRoom.SetParticipantNum(temp_objRoom.GetParticipantNum() + 1);
+								temp_objRoom.GetParticipantMap().emplace(objUser.GetID(), objUser);
+								objUser.SetbInRoom(true);
+								objUser.SetRoomNumber(temp_objRoom.GetRoomNumber());
+								objUser.SetRoomTitle(temp_objRoom.GetRoomTitle());
 
-								auto iter_objRoom = objServerManager.GetRoomInfoMap().begin();
-
-								for (int i = 0; i < tempRoomNum - 1; i++)
-									++iter_objRoom;
-
-								Room& tempObjRoom = iter_objRoom->second;
-
-								string tempMessage = objUser.GetID() + "> " + buf;
-
-								// 유저가 입력한 메시지 채팅방 내 모든 유저에게 전송
-								for (auto iter_Participant = tempObjRoom.GetParticipantList().begin(); iter_Participant != tempObjRoom.GetParticipantList().end(); ++iter_Participant)
-								{
-									unsigned int tempTargetUserSock = iter_Participant->GetSocket();
-									SendMessageToClient(tempTargetUserSock, tempMessage);
-								}
-
+								string tempStr = "** " + objUser.GetID() + "님이 들어오셨습니다. " + "(현재인원" + to_string(temp_objRoom.GetParticipantNum()) + "/ " + to_string(temp_objRoom.GetParticipantMaxNum()) + ")\n\r";
 								printf("%s:%d [%s] %s", addr, ntohs(clientaddr.sin_port), objUser.GetID().c_str(), buf);
-							}	
-						}
-						else
-						{
-							// 대화방이 꽉 찼다는 메시지 전송
-							SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::ROOMFULL]);
+
+								// 방에 있는 모든 인원에게 유저 대화방 참여 메시지 전송
+								for (auto iter_userInRoom = temp_objRoom.GetParticipantMap().begin(); iter_userInRoom != temp_objRoom.GetParticipantMap().end(); ++iter_userInRoom)
+								{
+									unsigned int tempUserSock = iter_userInRoom->second.GetSocket();
+									SendMessageToClient(tempUserSock, tempStr);
+								}
+
+								while (true) // 대화방 채팅 시작
+								{
+									// 데이터 받기
+									retval = recvline(client_sock, buf, BUFSIZE);
+									if (retval == SOCKET_ERROR) {
+										err_display("recv()");
+										break;
+									}
+									else if (retval == 0)
+										break;
+
+									auto iter_objRoom = objServerManager.GetRoomInfoMap().begin();
+
+									for (int i = 0; i < tempRoomNum - 1; i++)
+										++iter_objRoom;
+
+									Room& tempObjRoom = iter_objRoom->second;
+
+									string tempMessage = objUser.GetID() + "> " + buf;
+
+									// 유저가 입력한 메시지 채팅방 내 모든 유저에게 전송
+									for (auto iter_Participant = tempObjRoom.GetParticipantMap().begin(); iter_Participant != tempObjRoom.GetParticipantMap().end(); ++iter_Participant)
+									{
+										unsigned int tempTargetUserSock = iter_Participant->second.GetSocket();
+										SendMessageToClient(tempTargetUserSock, tempMessage);
+									}
+
+									printf("%s:%d [%s] %s", addr, ntohs(clientaddr.sin_port), objUser.GetID().c_str(), buf);
+								}
+							}
+							else
+							{
+								// 대화방이 꽉 찼다는 메시지 전송
+								SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::ROOMFULL]);
+							}
 						}
 					}
 
@@ -494,7 +528,7 @@ DWORD WINAPI ProcessClient(LPVOID arg)
 						// 해당 유저에게 타켓 유저가 접속해있지 않다는 문구 전송
 						SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::CANNOTFINDUSER]);
 					}
-					else
+					else // 해당 유저가 접속해 있을 때
 					{
 						string tempMessage = "\n\r# " + objUser.GetID() + "님의 쪽지 ==> ";
 
@@ -530,8 +564,10 @@ DWORD WINAPI ProcessClient(LPVOID arg)
 		}
 	}
 
-	objServerManager.GetUserInfoMap().erase(objUser.GetID()); // 접속 종료시 접속자 명단에서 삭제
-	objServerManager.GetRoomInfoMap().erase(objUser.GetID()); // 접속 종료시 방 명단에서 삭제
+	// 접속 종료시 접속자 명단에서 삭제 
+	// 접속 종료시 방 명단에서 삭제
+	objServerManager.UserQuitServer(objUser);
+
 	printf("%s:%d closed\n", addr, ntohs(clientaddr.sin_port));
 
 	// 소켓 닫기
