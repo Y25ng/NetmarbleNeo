@@ -30,12 +30,35 @@ void User::SetPortStr(string strValue)
 	m_port = strValue;
 }
 
-void User::SetUserInfo(string idValue, string ipValue, string portValue)
+void User::SetUserInfo(string idValue, string ipValue, string portValue, int sockValue)
 {
 	SetID(idValue);
 	SetIP(ipValue);
 	SetPortStr(portValue);
+	SetSocket(sockValue);
 }
+
+bool User::GetbInRoom()
+{
+	return m_bInRoom;
+}
+
+void User::SetbInRoom(bool value)
+{
+	m_bInRoom = value;
+}
+
+unsigned int User::GetSocket()
+{
+	return m_sock;
+}
+
+void User::SetSocket(unsigned int value)
+{
+	m_sock = value;
+}
+
+
 
 
 

@@ -16,13 +16,17 @@ public:
 	}
 
 	void SetParticipantMaxNum(int value);
+	int GetParticipantMaxNum();
 
 	int GetParticipantNum();
 	void SetParticipantNum(int value);
 
+	string GetRoomTitle();
 	void SetRoomTitle(string value);
 
+	int GetRoomNumber();
 	void SetRoomNumber(int value);
+
 
 private:
 	int m_roomNumber;

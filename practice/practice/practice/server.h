@@ -40,7 +40,11 @@ enum eSendMapKey
 	COMMANDINFO_10,
 	COMMANDINFO_11,
 
-	ALREADYEXISTID
+	ALREADYEXISTID,
+
+	SENDLETTER,
+	CANNOTSENDME,
+	CANNOTFINDUSER
 };
 
 struct sPrintOrSend
@@ -100,6 +104,13 @@ struct sPrintOrSend
 
 		sendMap[eSendMapKey::ALREADYEXISTID]
 			= "** 아이디를 이미 사용중입니다. 다른 아이디를 사용해주세요.\n\r";
+
+		sendMap[eSendMapKey::SENDLETTER]
+			= "** 쪽지를 보냈습니다.\n\r";
+		sendMap[eSendMapKey::CANNOTSENDME]
+			= "** 자기 자신에게는 보낼 수 없습니다.\n\r";
+		sendMap[eSendMapKey::CANNOTFINDUSER]
+			= "** 이용자를 찾을 수 없습니다.\n\r";
 	}
 
 	unordered_map<int, string> printMap;
@@ -118,7 +129,7 @@ private:
 	SOCKET m_listen_sock;
 
 	// 데이터 통신에 사용할 변수
-    SOCKET m_client_sock;
+	SOCKET m_client_sock;
 	struct sockaddr_in m_clientaddr;
 	int m_addrlen;
 };

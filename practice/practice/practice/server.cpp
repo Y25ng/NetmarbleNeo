@@ -79,13 +79,13 @@ int Server::Run()
 {
 	HANDLE hThread;
 
-	while (1) 
+	while (1)
 	{
 		// accept()
 		m_addrlen = sizeof(m_clientaddr);
 		m_client_sock = accept(m_listen_sock, (struct sockaddr*)&m_clientaddr, &m_addrlen);
 
-		if (m_client_sock == INVALID_SOCKET) 
+		if (m_client_sock == INVALID_SOCKET)
 		{
 			err_display("accept()");
 			break;
@@ -147,11 +147,13 @@ string Login(SOCKET client_sock, int& retval, char* buf, char* addr, struct sock
 			else
 			{
 				objUser->SetUserInfo(tempBufStr.substr(6, tempBufStr.size() - 8),
-					to_string(ntohs(clientaddr.sin_port)), addr);
+					addr, to_string(ntohs(clientaddr.sin_port)), client_sock);
 
 				printf("%s:%d [] %s", addr, ntohs(clientaddr.sin_port), buf);
 
-				objServerManager.GetUserInfoMap()[objUser->GetID()] = objUser->GetIP() + ":" + objUser->GetPort();
+				objServerManager.GetUserInfoMap()[objUser->GetID()] = *objUser;
+
+
 				break;
 			}
 		}
@@ -238,7 +240,12 @@ DWORD WINAPI ProcessClient(LPVOID arg)
 		{
 			if (tempBuf.substr(0, 2) == "US") // US 입력이 들어왔을 경우
 			{
-				string tempStr = objServerManager.LoginUsersInfo();
+				string tempStr = objServerManager.LoginUsersList();
+				send(client_sock, tempStr.c_str(), tempStr.size(), 0);
+			}
+			else if (tempBuf.substr(0, 2) == "LT") // LT 입력이 들어왔을 경우
+			{
+				string tempStr = objServerManager.RoomList();
 				send(client_sock, tempStr.c_str(), tempStr.size(), 0);
 			}
 		}
@@ -249,7 +256,7 @@ DWORD WINAPI ProcessClient(LPVOID arg)
 
 			if (tempVec.size() >= 2)
 			{
-				if (tempVec[0] == "O" && tempVec.size() >=3)
+				if (tempVec[0] == "O" && tempVec.size() >= 3)
 				{
 					int tempMaxNum = stoi(tempVec[1]);
 					string tempRoomTitle = "";
@@ -268,6 +275,86 @@ DWORD WINAPI ProcessClient(LPVOID arg)
 						objRoom.SetRoomNumber(objServerManager.GetRoomInfoVec().size() + 1);
 
 						objServerManager.GetRoomInfoVec().push_back(objRoom);
+
+						objUser.SetbInRoom(true);
+					}
+				}
+				else if (tempVec[0] == "ST" && tempVec.size() == 2)
+				{
+					int tempRoomNum = stoi(tempVec[1]);
+
+					if (objServerManager.GetRoomInfoVec().size() - 1 <= tempRoomNum)
+					{
+
+					}
+				}
+				else if (tempVec[0] == "PF" && tempVec.size() == 2)
+				{
+					string tempUserID = tempVec[1].substr(0, tempVec[1].size() - 1);
+
+					if (objServerManager.GetUserInfoMap().find(tempUserID) == objServerManager.GetUserInfoMap().end())
+					{
+						string tempStr = "** " + tempUserID + "님을 찾을 수 없습니다.\n\r";
+						send(client_sock, tempStr.c_str(), tempStr.size(), 0);
+					}
+					else
+					{
+						if (objUser.GetbInRoom())
+						{
+							string tempStr = "** " + tempUserID + "님은 현재 채팅방에 있습니다.\n\r";
+
+							tempStr += "** 접속지: "
+								+ objServerManager.GetUserInfoMap()[tempUserID].GetIP() + ":"
+								+ objServerManager.GetUserInfoMap()[tempUserID].GetPort() + "\n\r";
+
+							send(client_sock, tempStr.c_str(), tempStr.size(), 0);
+						}
+						else
+						{
+							string tempStr = "** " + tempUserID + "님은 현재 대기실에 있습니다.\n\r";
+
+							tempStr += "** 접속지: "
+								+ objServerManager.GetUserInfoMap()[tempUserID].GetIP() + ":"
+								+ objServerManager.GetUserInfoMap()[tempUserID].GetPort() + "\n\r";
+
+							send(client_sock, tempStr.c_str(), tempStr.size(), 0);
+						}
+					}
+				}
+				else if (tempVec[0] == "TO" && tempVec.size() >= 3)
+				{
+					string tempRecvUserID = tempVec[1];
+
+					if (tempRecvUserID == objUser.GetID())
+					{
+						send(client_sock, objPrintOrSend.sendMap[eSendMapKey::CANNOTSENDME].c_str(), objPrintOrSend.sendMap[eSendMapKey::CANNOTSENDME].size(), 0);
+					}
+					else if (objServerManager.GetUserInfoMap().find(tempRecvUserID) == objServerManager.GetUserInfoMap().end())
+					{
+						send(client_sock, objPrintOrSend.sendMap[eSendMapKey::CANNOTFINDUSER].c_str(), objPrintOrSend.sendMap[eSendMapKey::CANNOTFINDUSER].size(), 0);
+					}
+					else
+					{
+						string tempMessage = "\n\r# " + objUser.GetID() + "님의 쪽지 ==> ";
+
+						for (int i = 2; i < tempVec.size(); i++)
+						{
+							if (i == tempVec.size() - 1)
+							{
+								tempMessage += tempVec[i].substr(0, tempVec[i].size() - 1) + "\n\r";
+							}
+							else
+							{
+								tempMessage += tempVec[i] + " ";
+							}
+						}
+
+						send(client_sock, objPrintOrSend.sendMap[eSendMapKey::SENDLETTER].c_str(), objPrintOrSend.sendMap[eSendMapKey::SENDLETTER].size(), 0);
+						send(objServerManager.GetUserInfoMap()[tempRecvUserID].GetSocket(), tempMessage.c_str(), tempMessage.size(), 0);
+
+						// 명렁어 H or X 정보 클라이언트에게 전송
+						send(objServerManager.GetUserInfoMap()[tempRecvUserID].GetSocket(), objPrintOrSend.sendMap[eSendMapKey::FIRSTINFO].c_str(),
+							(objPrintOrSend.sendMap[FIRSTINFO]).size(), 0);
 					}
 				}
 			}
