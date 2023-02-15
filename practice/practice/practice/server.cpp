@@ -331,6 +331,16 @@ DWORD WINAPI ProcessClient(LPVOID arg)
 							else if (retval == 0)
 								break;
 
+							string tempFlagStr = buf;
+
+							if (tempFlagStr.size() == eCommand::ONLYCOMMAND_ONE && tempFlagStr[0] == 'X')
+							{
+								// 접속 종료시 접속자 명단에서 삭제 
+								// 접속 종료시 방 명단에서 삭제
+								objServerManager.UserQuitServer(objUser);
+								break;
+							}
+
 							auto iter_objRoom = objServerManager.GetRoomInfoMap().end();							
 							--iter_objRoom;
 							objRoom = iter_objRoom->second;
