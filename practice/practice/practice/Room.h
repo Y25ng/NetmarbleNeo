@@ -12,27 +12,31 @@ class Room
 {
 public:
 
-	Room()
+	Room():
+		m_roomNumber(-1),
+		m_participantNum(0),
+		m_participantMaxNum(0),
+		m_roomTitle("")
 	{
-		m_roomNumber = - 1;
-		m_participantNum = 0;
-		m_participantNum = 0;
-		m_participantMaxNum = 0;
 	}
-
-	void SetParticipantMaxNum(int value);
-	int GetParticipantMaxNum();
-
-	int GetParticipantNum();
-	void SetParticipantNum(int value);
-
-	string GetRoomTitle();
-	void SetRoomTitle(string value);
 
 	int GetRoomNumber();
 	void SetRoomNumber(int value);
 
+	int GetParticipantNum();
+	void SetParticipantNum(int value);
+
+	void SetParticipantMaxNum(int value);
+	int GetParticipantMaxNum();
+
+	string& GetRoomTitle();
+	void SetRoomTitle(string value);
+
 	list<User>& GetParticipantList();
+
+	void SetRoomInfo(int roomNumber, int participantNum, int participantMaxNum, string& roomTitle);
+
+	bool GetbFull();
 
 private:
 

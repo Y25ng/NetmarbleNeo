@@ -58,11 +58,6 @@ unordered_map<string, User>& ServerManager::GetUserInfoMap()
 	return m_userInfoMap;
 }
 
-vector<Room>& ServerManager::GetRoomInfoVec()
-{
-	return m_roomInfoVec;
-}
-
 map<string, Room>& ServerManager::GetRoomInfoMap()
 {
 	return m_roomInfoMap;

@@ -9,6 +9,22 @@
 
 using namespace std;
 
+enum eCommand
+{
+
+	ONECOMMANDONEPARAMETER = 2,
+	ONECOMMANDTWOPARAMETER = 3,
+	ONLYCOMMAND_ONE = 3,
+	ONLYCOMMAND_TWO = 4,
+
+	MINLENGTHLOGINPOSSIBLE = 7,
+};
+
+enum eRet
+{
+	EMPTYMESSAGE = 0
+};
+
 enum ePrintMapKey
 {
 	INITIALIZE = 0,
@@ -47,6 +63,8 @@ enum eSendMapKey
 	CANNOTFINDUSER,
 
 	CREATEROOM,
+	ROOMFULL,
+
 };
 
 struct sPrintOrSend
@@ -54,7 +72,7 @@ struct sPrintOrSend
 	sPrintOrSend()
 	{
 		printMap[ePrintMapKey::INITIALIZE]
-			= "server initialized successfully.\nall client message would be printed in console window.\nwaiting for client..\n";
+			= "server initialized successfully.\nall client message would be printed in console window.\nwaiting for client..\n------------------\nPort Number: 9000\n------------------\n";
 
 		////////////////////////////////////////////////////////////////////
 		////////////////////////////////////////////////////////////////////
@@ -116,6 +134,8 @@ struct sPrintOrSend
 
 		sendMap[eSendMapKey::CREATEROOM]
 			= "** 대화방이 개설되었습니다.\n\r";
+		sendMap[eSendMapKey::ROOMFULL]
+			= "** 인원이 꽉 차서 참여할 수 없습니다.\n\r";
 	}
 
 	unordered_map<int, string> printMap;
@@ -125,8 +145,8 @@ struct sPrintOrSend
 class Server
 {
 public:
-	int InitServer();
-	int Run();
+	bool InitServer();
+	bool Run();
 
 private:
 	int m_retval;
@@ -138,6 +158,7 @@ private:
 	struct sockaddr_in m_clientaddr;
 	int m_addrlen;
 };
+
 
 
 

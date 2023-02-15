@@ -21,13 +21,11 @@ public:
 	string RoomInfo();
 
 	unordered_map<string, User>& GetUserInfoMap();
-	vector<Room>& GetRoomInfoVec();
 	map<string, Room>& GetRoomInfoMap();
 
 private:
 
 	unordered_map<string, User> m_userInfoMap; // key: ID, value: IP + port
-	vector<Room> m_roomInfoVec;
 	map<string, Room> m_roomInfoMap;
 
 };

@@ -8,7 +8,13 @@ using namespace std;
 class User
 {
 public:
-	User() : m_id(""), m_ip(""), m_port(""), m_bInRoom(false), m_sock(0), m_roomNumber(0)
+	User(): 
+		m_id(""), 
+		m_ip(""), 
+		m_port(""), 
+		m_bInRoom(false), 
+		m_sock(0), 
+		m_roomNumber(0)
 	{
 	}
 
@@ -21,7 +27,7 @@ public:
 	string GetPort();
 	void SetPortStr(string strValue);
 
-	void SetUserInfo(string idValue, string ipValue, string portValue, int sockValue);
+	void SetUserInfo(string idValue, string ipValue, string portValue, unsigned int sockValue);
 
 	bool GetbInRoom();
 	void SetbInRoom(bool value);

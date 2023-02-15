@@ -30,7 +30,7 @@ void User::SetPortStr(string strValue)
 	m_port = strValue;
 }
 
-void User::SetUserInfo(string idValue, string ipValue, string portValue, int sockValue)
+void User::SetUserInfo(string idValue, string ipValue, string portValue, unsigned int sockValue)
 {
 	SetID(idValue);
 	SetIP(ipValue);
