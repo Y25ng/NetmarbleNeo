@@ -1,5 +1,5 @@
 #pragma once
-#include "C:\Users\kyeongnyeong.lee\Desktop\practice\practice\practice\Common.h"
+#include "Common.h"
 #include "ServerManager.h"
 
 #include <string>
@@ -44,7 +44,9 @@ enum eSendMapKey
 
 	SENDLETTER,
 	CANNOTSENDME,
-	CANNOTFINDUSER
+	CANNOTFINDUSER,
+
+	CREATEROOM,
 };
 
 struct sPrintOrSend
@@ -70,9 +72,9 @@ struct sPrintOrSend
 		sendMap[eSendMapKey::COMPLETELOGIN_3]
 			= "이용중 불편하신 점이 있으면 아래 이메일로 문의 바랍니다.\n\r감사합니다.\n\n\r";
 		sendMap[eSendMapKey::COMPLETELOGIN_4]
-			= "                                programmed & arranged by oranze\n\r";
+			= "                                programmed & arranged by knlee\n\r";
 		sendMap[eSendMapKey::COMPLETELOGIN_5]
-			= "                                    email: oranze@softweb.co.kr\n\r";
+			= "                                    email: @@@@@####\n\r";
 		sendMap[eSendMapKey::COMPLETELOGIN_6]
 			= "---------------------------------------------------------------\n\r";
 
@@ -111,6 +113,9 @@ struct sPrintOrSend
 			= "** 자기 자신에게는 보낼 수 없습니다.\n\r";
 		sendMap[eSendMapKey::CANNOTFINDUSER]
 			= "** 이용자를 찾을 수 없습니다.\n\r";
+
+		sendMap[eSendMapKey::CREATEROOM]
+			= "** 대화방이 개설되었습니다.\n\r";
 	}
 
 	unordered_map<int, string> printMap;

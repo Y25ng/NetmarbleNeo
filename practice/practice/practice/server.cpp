@@ -5,6 +5,8 @@
 #include <string>
 #include <string.h>
 #include <vector>
+#include <list>
+#include <map>
 
 #define SERVERPORT 9000
 #define BUFSIZE    512
@@ -272,21 +274,141 @@ DWORD WINAPI ProcessClient(LPVOID arg)
 						objRoom.SetParticipantMaxNum(tempMaxNum);
 						objRoom.SetParticipantNum(1);
 						objRoom.SetRoomTitle(tempRoomTitle);
-						objRoom.SetRoomNumber(objServerManager.GetRoomInfoVec().size() + 1);
+						objRoom.SetRoomNumber(objServerManager.GetRoomInfoMap().size() + 1);
+						objRoom.GetParticipantList().push_back(objUser);
 
-						objServerManager.GetRoomInfoVec().push_back(objRoom);
-
+						objServerManager.GetRoomInfoMap().emplace(objUser.GetID(), objRoom);
+						
 						objUser.SetbInRoom(true);
+						objUser.SetRoomNumber(objRoom.GetRoomNumber());
+
+						send(client_sock, objPrintOrSend.sendMap[eSendMapKey::CREATEROOM].c_str(), objPrintOrSend.sendMap[eSendMapKey::CREATEROOM].size(), 0);
+
+						string tempStr = "** " + objUser.GetID() + "님이 들어오셨습니다. " + "(현재인원 1/" + to_string(objRoom.GetParticipantMaxNum()) + ")\n\r";
+						send(client_sock, tempStr.c_str(), tempStr.size(), 0);
+						printf("%s:%d [%s] %s", addr, ntohs(clientaddr.sin_port), objUser.GetID().c_str(), buf);
+
+						while (1)
+						{
+							// 데이터 받기
+							retval = recvline(client_sock, buf, BUFSIZE);
+							if (retval == SOCKET_ERROR) {
+								err_display("recv()");
+								break;
+							}
+							else if (retval == 0)
+								break;
+
+							auto iter_objRoom = objServerManager.GetRoomInfoMap().end();
+							--iter_objRoom;
+
+							objRoom = iter_objRoom->second;
+
+							string tempBuf = objUser.GetID() + "> " + buf;
+
+							for (auto iter = objRoom.GetParticipantList().begin(); iter != objRoom.GetParticipantList().end(); ++iter)
+							{
+								unsigned int tempTargetUserSock = iter->GetSocket();
+								send(tempTargetUserSock, tempBuf.c_str(), tempBuf.size(), 0);
+							}
+
+							printf("%s:%d [%s] %s", addr, ntohs(clientaddr.sin_port), objUser.GetID().c_str(), buf);
+						}
 					}
 				}
 				else if (tempVec[0] == "ST" && tempVec.size() == 2)
 				{
 					int tempRoomNum = stoi(tempVec[1]);
 
-					if (objServerManager.GetRoomInfoVec().size() - 1 <= tempRoomNum)
+					if (objServerManager.GetRoomInfoMap().size() >= tempRoomNum)
 					{
+						auto iter = objServerManager.GetRoomInfoMap().begin();
 
+						for (int i = 0; i < tempRoomNum - 1; i++)
+						{
+							++iter;
+						}
+
+						list<User>& tempList = iter->second.GetParticipantList();
+						auto iter_tempList = tempList.begin();
+
+						string tempStr = "";
+
+						tempStr = "[ " + to_string(iter->second.GetRoomNumber()) + "]  "
+							+ "( " + to_string(iter->second.GetParticipantNum()) + "/" + to_string(iter->second.GetParticipantMaxNum()) + " )  "
+							+ iter->second.GetRoomTitle() + "\n\r"
+							+ "개설시간:  \n\r";
+
+						for (int i = 0; i < tempList.size(); i++)
+						{
+							tempStr += "참여자: " + (*iter_tempList).GetID() + "            참여시간 :\n\r";
+						}
+
+						send(client_sock, tempStr.c_str(), tempStr.size(), 0);
 					}
+				}
+				else if (tempVec[0] == "J" && tempVec.size() == 2)
+				{
+					int tempRoomNum = stoi(tempVec[1]);
+
+					if (objServerManager.GetRoomInfoMap().size() >= tempRoomNum)
+					{
+						auto iter = objServerManager.GetRoomInfoMap().begin();
+
+						for (int i = 0; i < tempRoomNum - 1; i++)
+							++iter;
+
+						Room& objRoom = iter->second;
+
+						if (objRoom.GetParticipantNum() < objRoom.GetParticipantMaxNum())
+						{
+							objRoom.SetParticipantNum(objRoom.GetParticipantNum() + 1);
+							objRoom.GetParticipantList().push_back(objUser);
+
+							string tempStr = "** " + objUser.GetID() + "님이 들어오셨습니다. " + "(현재인원" + to_string(objRoom.GetParticipantNum()) + "/ " + to_string(objRoom.GetParticipantMaxNum()) + ")\n\r";
+							printf("%s:%d [%s] %s", addr, ntohs(clientaddr.sin_port), objUser.GetID().c_str(), buf);
+
+							for (auto iter_userInRoom = objRoom.GetParticipantList().begin(); iter_userInRoom != objRoom.GetParticipantList().end(); ++iter_userInRoom)
+							{
+								unsigned int tempUserSock = iter_userInRoom->GetSocket();
+								send(tempUserSock, tempStr.c_str(), tempStr.size(), 0);
+							}
+
+							while (1)
+							{
+								// 데이터 받기
+								retval = recvline(client_sock, buf, BUFSIZE);
+								if (retval == SOCKET_ERROR) {
+									err_display("recv()");
+									break;
+								}
+								else if (retval == 0)
+									break;
+
+								auto iter_objRoom = objServerManager.GetRoomInfoMap().begin();
+
+								for (int i = 0; i < tempRoomNum - 1; i++)
+									++iter_objRoom;
+
+								Room& objRoom = iter_objRoom->second;
+
+								string tempBuf = objUser.GetID() + "> " + buf;
+
+								for (auto iter = objRoom.GetParticipantList().begin(); iter != objRoom.GetParticipantList().end(); ++iter)
+								{
+									unsigned int tempTargetUserSock = iter->GetSocket();
+									send(tempTargetUserSock, tempBuf.c_str(), tempBuf.size(), 0);
+								}
+
+								printf("%s:%d [%s] %s", addr, ntohs(clientaddr.sin_port), objUser.GetID().c_str(), buf);
+							}	
+						}
+						else
+						{
+
+						}
+					}
+
 				}
 				else if (tempVec[0] == "PF" && tempVec.size() == 2)
 				{

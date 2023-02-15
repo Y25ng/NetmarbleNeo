@@ -8,7 +8,7 @@ using namespace std;
 class User
 {
 public:
-	User() : m_id(""), m_ip(""), m_port(""), m_bInRoom(false), m_sock(0)
+	User() : m_id(""), m_ip(""), m_port(""), m_bInRoom(false), m_sock(0), m_roomNumber(0)
 	{
 	}
 
@@ -29,12 +29,22 @@ public:
 	unsigned int GetSocket();
 	void SetSocket(unsigned int value);
 
+	string GetJoinTime();
+	void SetJoinTime(string value);
+
+	int GetRoomNumber();
+	void SetRoomNumber(int value);
+
 private:
+
 	string m_id;
 	string m_ip;
 	string m_port;
+	string m_joinTime;
 
 	bool m_bInRoom;
+
+	int m_roomNumber;
 
 	unsigned int m_sock;
 };

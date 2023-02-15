@@ -58,6 +58,25 @@ void User::SetSocket(unsigned int value)
 	m_sock = value;
 }
 
+string User::GetJoinTime()
+{
+	return m_joinTime;
+}
+
+void User::SetJoinTime(string value)
+{
+	m_joinTime = value;
+}
+
+int User::GetRoomNumber()
+{
+	return m_roomNumber;
+}
+
+void User::SetRoomNumber(int value)
+{
+	m_roomNumber = value;
+}
 
 
 

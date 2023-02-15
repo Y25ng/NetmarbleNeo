@@ -15,7 +15,7 @@ string ServerManager::LoginUsersList()
 		tempStr += iter->first;
 		tempStr += "            ";
 		tempStr += "立加瘤:  ";
-		tempStr += iter->second.GetIP() + iter->second.GetPort();
+		tempStr += iter->second.GetIP() + ":" + iter->second.GetPort();
 		tempStr += "\n\r";
 	}
 
@@ -28,12 +28,16 @@ string ServerManager::RoomList()
 {
 	string tempStr = "------------------------- 措拳规 格废 -------------------------\n\r";
 
-	for (int i = 0; i < m_roomInfoVec.size(); i++)
+	int cnt = 1;
+
+	for (auto iter = m_roomInfoMap.begin(); iter != m_roomInfoMap.end(); ++iter)
 	{
-		tempStr += "[  " + to_string(m_roomInfoVec[i].GetRoomNumber()) + "] ";
-		tempStr += "( " + to_string(m_roomInfoVec[i].GetParticipantNum()) + " / " + to_string(m_roomInfoVec[i].GetParticipantMaxNum()) + " ) ";
-		tempStr += m_roomInfoVec[i].GetRoomTitle();
+		tempStr += "[  " + to_string(cnt) + "] ";
+		tempStr += "( " + to_string(iter->second.GetParticipantNum()) + " / " + to_string(iter->second.GetParticipantMaxNum()) + " ) ";
+		tempStr += iter->second.GetRoomTitle();
 		tempStr += "\n\r";
+
+		++cnt;
 	}
 
 	tempStr += "---------------------------------------------------------------\n\r";
@@ -57,4 +61,9 @@ unordered_map<string, User>& ServerManager::GetUserInfoMap()
 vector<Room>& ServerManager::GetRoomInfoVec()
 {
 	return m_roomInfoVec;
+}
+
+map<string, Room>& ServerManager::GetRoomInfoMap()
+{
+	return m_roomInfoMap;
 }

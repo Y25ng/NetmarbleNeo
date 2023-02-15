@@ -41,3 +41,8 @@ void Room::SetRoomTitle(string value)
 {
 	m_roomTitle = value;
 }
+
+list<User>& Room::GetParticipantList()
+{
+	return m_participantList;
+}
