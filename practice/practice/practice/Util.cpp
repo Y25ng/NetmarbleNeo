@@ -1,8 +1,8 @@
 #include "Util.h"
 
-vector<string> Util::split(string str, char delimiter)
+vector<string> Util::split(string& str, char delimiter)
 {
-	std::vector<string> vs;
+	vector<string> vs;
 	string temp = "";
 
 	for (int i = 0; !(str[i] == '\n'); i++)

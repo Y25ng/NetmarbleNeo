@@ -12,6 +12,7 @@ public:
 		m_id(""), 
 		m_ip(""), 
 		m_port(""), 
+		m_joinTime(""),
 		m_bInRoom(false), 
 		m_sock(0), 
 		m_roomNumber(0)

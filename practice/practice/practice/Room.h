@@ -34,7 +34,10 @@ public:
 
 	map<string, User>& GetParticipantMap();
 
-	void SetRoomInfo(int roomNumber, int participantNum, int participantMaxNum, const string& roomTitle);
+	const string& GetCreateTime();
+	void SetCreateTime(string& value);
+
+	void SetRoomInfo(int roomNumber, int participantNum, int participantMaxNum, const string& roomTitle, const string& createTime);
 
 	bool GetbFull();
 
@@ -44,5 +47,6 @@ private:
 	int m_participantNum;
 	int m_participantMaxNum;
 	string m_roomTitle;
+	string m_createTime;
 	map<string, User> m_participantMap;
 };

@@ -6,8 +6,8 @@
 #include <string>
 #include <string.h>
 #include <vector>
-#include <list>
 #include <map>
+#include <ctime>
 
 #define SERVERPORT 9000
 #define BUFSIZE    512
@@ -20,11 +20,9 @@ int _recv_ahead(SOCKET s, char* p);
 // 사용자 정의 데이터 수신 함수
 int recvline(SOCKET s, char* buf, int maxlen);
 
-vector<string> split(string str, char delimiter);
-
 // 클라이언트와 데이터 통신
 DWORD WINAPI ProcessClient(LPVOID arg);
-void SendMessageToClient(SOCKET client_socket, string& message);
+void SCommand::FuncInCommand::SendMessageToClient(SOCKET client_socket, string& message);
 
 sPrintOrSend objPrintOrSend;
 ServerManager objServerManager;
@@ -120,7 +118,7 @@ bool Server::Run()
 string Login(SOCKET client_sock, int& retval, char* buf, char* addr, struct sockaddr_in clientaddr, User* objUser)
 {
 	// 로그인 요청 문구 클라이언트에게 전송
-	SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::REQUESTLOGIN]);
+	SCommand::FuncInCommand::SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::REQUESTLOGIN]);
 
 	while (true)
 	{
@@ -150,7 +148,7 @@ string Login(SOCKET client_sock, int& retval, char* buf, char* addr, struct sock
 			if (bAlreadyExistID) // 기존 유저와 ID가 겹칠 시
 			{
 				// 현재 접속을 원하는 유저에게 이미 존재하는 ID임을 알려주는 안내 문구 전송
-				SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::ALREADYEXISTID]);
+				SCommand::FuncInCommand::SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::ALREADYEXISTID]);
 			}
 			else // 기존 유저와 ID가 겹치지 않을 시
 			{
@@ -198,7 +196,7 @@ DWORD WINAPI ProcessClient(LPVOID arg)
 	inet_ntop(AF_INET, &clientaddr.sin_addr, addr, sizeof(addr));
 
 	// 채팅서버 인사말 클라이언트에게 전송
-	SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::WELCOME]);
+	SCommand::FuncInCommand::SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::WELCOME]);
 
 	// 유저 로그인 ID
 	string tempID = Login(client_sock, retval, buf, addr, clientaddr, &objUser);
@@ -206,13 +204,13 @@ DWORD WINAPI ProcessClient(LPVOID arg)
 	// 채팅 서버 입장 인사말 클라이언트에게 전송
 	for (int i = eSendMapKey::COMPLETELOGIN_1; i <= eSendMapKey::COMPLETELOGIN_6; ++i)
 	{
-		SendMessageToClient(client_sock, objPrintOrSend.sendMap[i]);
+		SCommand::FuncInCommand::SendMessageToClient(client_sock, objPrintOrSend.sendMap[i]);
 	}
 
 	while (true)
 	{
 		// 명렁어 H and X 정보 클라이언트에게 전송
-		SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::FIRSTINFO]);
+		SCommand::FuncInCommand::SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::FIRSTINFO]);
 
 		// 데이터 받기
 		retval = recvline(client_sock, buf, BUFSIZE);
@@ -240,18 +238,19 @@ DWORD WINAPI ProcessClient(LPVOID arg)
 		{
 			switch (tempBuf[0])
 			{
-			case 'H': // H 입력이 들어왔을 경우
+			case 'H': 
 
 				// 명령어 안내 전송
-				SCommand::Command_H_Func((unsigned int)client_sock);
-
+				SCommand::Command_H_Guide((unsigned int)client_sock);
 				break;
 
-			case 'X': // X 입력이 들어왔을 경우
+			case 'X': 
+
 				bExit = true;
 				break;
 
 			default:
+
 				break;
 			}
 		}
@@ -260,12 +259,12 @@ DWORD WINAPI ProcessClient(LPVOID arg)
 			if (tempBuf.substr(0, 2) == "US") // US 입력이 들어왔을 경우
 			{
 				// 이용자 목록 클라이언트에게 전송
-				SCommand::Command_US_Func((unsigned int)client_sock);
+				SCommand::Command_US_LoginUserInfo((unsigned int)client_sock);
 			}
 			else if (tempBuf.substr(0, 2) == "LT") // LT 입력이 들어왔을 경우
 			{
 				// 대화방 목록 출력 클라이언트에게 전송
-				SCommand::Command_LT_Func((unsigned int)client_sock);
+				SCommand::Command_LT_RoomList((unsigned int)client_sock);
 			}
 		}
 		else // 클라이언트에게서 세글자 이상의 명령이 들어왔을 경우
@@ -283,23 +282,23 @@ DWORD WINAPI ProcessClient(LPVOID arg)
 				// => 방 개설 명령
 				if (tempBufSplit_Vec[0] == "O" && tempBufSplit_Vec.size() >= eCommand::ONECOMMANDTWOPARAMETER && Util::bCanUsestoi(tempBufSplit_Vec[1]))
 				{
-					SCommand::Command_O_Func(tempBufSplit_Vec, objUser, (unsigned int)client_sock, addr, clientaddr, buf, retval);
+					SCommand::Command_O_CreateRoom(tempBufSplit_Vec, objUser, (unsigned int)client_sock, addr, clientaddr, buf, retval);
 				}
 				else if (tempBufSplit_Vec[0] == "ST" && tempBufSplit_Vec.size() == eCommand::ONECOMMANDONEPARAMETER) // 대화방 정보
 				{
-					SCommand::Command_ST_Func((unsigned int)client_sock, tempBufSplit_Vec);
+					SCommand::Command_ST_RoomInfo((unsigned int)client_sock, tempBufSplit_Vec);
 				}
 				else if (tempBufSplit_Vec[0] == "J" && tempBufSplit_Vec.size() == eCommand::ONECOMMANDONEPARAMETER) // 대화방 참여
 				{
-					SCommand::Command_J_Func(tempBufSplit_Vec, objUser, (unsigned int)client_sock, addr, clientaddr, buf, retval);
+					SCommand::Command_J_JoinRoom(tempBufSplit_Vec, objUser, (unsigned int)client_sock, addr, clientaddr, buf, retval);
 				}
 				else if (tempBufSplit_Vec[0] == "PF" && tempBufSplit_Vec.size() == eCommand::ONECOMMANDONEPARAMETER) // 이용자 정보 확인
 				{
-					SCommand::Command_PF_Func(tempBufSplit_Vec, (unsigned int)client_sock, objUser);
+					SCommand::Command_PF_UserInfo(tempBufSplit_Vec, (unsigned int)client_sock);
 				}
 				else if (tempBufSplit_Vec[0] == "TO" && tempBufSplit_Vec.size() >= eCommand::ONECOMMANDTWOPARAMETER) // 유저에게 쪽지보내기
 				{
-					SCommand::Command_TO_Func(tempBufSplit_Vec, (unsigned int)client_sock, objUser);
+					SCommand::Command_TO_Letter(tempBufSplit_Vec, (unsigned int)client_sock, objUser);
 				}
 			}
 		}
@@ -371,12 +370,12 @@ int recvline(SOCKET s, char* buf, int maxlen)
 	return n;
 }
 
-void SendMessageToClient(SOCKET client_socket, string& message)
+void SCommand::FuncInCommand::SendMessageToClient(SOCKET client_socket, string& message)
 {
 	send(client_socket, message.c_str(), (int)message.size(), 0);
 }
 
-void SCommand::Chatting_By_OorJ(User& objUser, Room& objRoom, unsigned int client_sock, char* addr, struct sockaddr_in clientaddr, char* buf, int retval)
+void SCommand::FuncInCommand::Chatting_By_OorJ(User& objUser, Room& objRoom, unsigned int client_sock, char* addr, struct sockaddr_in clientaddr, char* buf, int retval)
 {
 	while (true)
 	{
@@ -393,9 +392,9 @@ void SCommand::Chatting_By_OorJ(User& objUser, Room& objRoom, unsigned int clien
 
 		if (tempFlagStr.size() == eCommand::ONLYCOMMAND_ONE && tempFlagStr[0] == 'X')
 		{
-			// 접속 종료시 접속자 명단에서 삭제 
 			// 접속 종료시 방 명단에서 삭제
-			objServerManager.UserQuitServer(objUser);
+			objServerManager.GetUserInfoMap().find(objUser.GetID())->second.SetbInRoom(false);
+			objServerManager.DeleteUserInRoom(objUser);
 			break;
 		}
 
@@ -408,35 +407,35 @@ void SCommand::Chatting_By_OorJ(User& objUser, Room& objRoom, unsigned int clien
 		for (auto iter = objRoom.GetParticipantMap().begin(); iter != objRoom.GetParticipantMap().end(); ++iter)
 		{
 			unsigned int tempTargetUserSock = iter->second.GetSocket();
-			SendMessageToClient(tempTargetUserSock, tempMessage);
+			SCommand::FuncInCommand::SendMessageToClient(tempTargetUserSock, tempMessage);
 		}
 
 		printf("%s:%d [%s] %s", addr, ntohs(clientaddr.sin_port), objUser.GetID().c_str(), buf);
 	}
 }
 
-void SCommand::Command_H_Func(unsigned int client_sock)
+void SCommand::Command_H_Guide(unsigned int client_sock)
 {
 	for (int i = eSendMapKey::COMMANDINFO_1; i <= eSendMapKey::COMMANDINFO_11; i++)
 	{
-		SendMessageToClient(client_sock, objPrintOrSend.sendMap[i]);
+		SCommand::FuncInCommand::SendMessageToClient(client_sock, objPrintOrSend.sendMap[i]);
 	}
 }
 
-void SCommand::Command_US_Func(unsigned int client_sock)
+void SCommand::Command_US_LoginUserInfo(unsigned int client_sock)
 {
 	string tempStr = objServerManager.LoginUsersList();
-	SendMessageToClient(client_sock, tempStr);
+	SCommand::FuncInCommand::SendMessageToClient(client_sock, tempStr);
 }
 
-void SCommand::Command_LT_Func(unsigned int client_sock)
+void SCommand::Command_LT_RoomList(unsigned int client_sock)
 {
 	// 대화방 목록 출력 클라이언트에게 전송
 	string tempStr = objServerManager.RoomList();
-	SendMessageToClient(client_sock, tempStr);
+	SCommand::FuncInCommand::SendMessageToClient(client_sock, tempStr);
 }
 
-void SCommand::Command_O_Func(vector<string>& tempBufSplit_Vec, User& objUser, unsigned int client_sock, char* addr, struct sockaddr_in clientaddr, char* buf, int retval)
+void SCommand::Command_O_CreateRoom(vector<string>& tempBufSplit_Vec, User& objUser, unsigned int client_sock, char* addr, struct sockaddr_in clientaddr, char* buf, int retval)
 {
 	// 방 최대 인원수  
 	int tempMaxNum = stoi(tempBufSplit_Vec[1]);
@@ -456,37 +455,43 @@ void SCommand::Command_O_Func(vector<string>& tempBufSplit_Vec, User& objUser, u
 	{
 		Room objRoom;
 
+		time_t timer = time(NULL);
+		struct tm* objTM = localtime(&timer);
+		string currTimeStr = to_string(objTM->tm_hour) + ": " + to_string(objTM->tm_min) + ": " + to_string(objTM->tm_sec);
+
 		//  방 정보 세팅 및 유저 정보 세팅
-		objRoom.SetRoomInfo((int)objServerManager.GetRoomInfoMap().size() + 1, 1, tempMaxNum, tempRoomTitle);
+		objRoom.SetRoomInfo((int)objServerManager.GetRoomInfoMap().size() + 1, 1, tempMaxNum, tempRoomTitle, currTimeStr);
 		objUser.SetbInRoom(true);
 		objUser.SetRoomNumber(objRoom.GetRoomNumber());
+		objUser.SetJoinTime(currTimeStr);
 		objUser.SetRoomTitle(objRoom.GetRoomTitle());
 		objRoom.GetParticipantMap().emplace(objUser.GetID(), objUser);
 
 		objServerManager.GetRoomInfoMap().emplace(objRoom.GetRoomTitle(), objRoom);
+		objServerManager.GetUserInfoMap().find(objUser.GetID())->second.SetbInRoom(true);
 
-		SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::CREATEROOM]);
+		SCommand::FuncInCommand::SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::CREATEROOM]);
 
 		string tempStr = "** " + objUser.GetID() + "님이 들어오셨습니다. " + "(현재인원 1/" + to_string(objRoom.GetParticipantMaxNum()) + ")\n\r";
-		SendMessageToClient(client_sock, tempStr);
+		SCommand::FuncInCommand::SendMessageToClient(client_sock, tempStr);
 		printf("%s:%d [%s] %s", addr, ntohs(clientaddr.sin_port), objUser.GetID().c_str(), buf);
 
-		Chatting_By_OorJ(objUser, objRoom, (unsigned int)client_sock, addr, clientaddr, buf, retval); // 채팅방 내에서의 채팅 함수
+		SCommand::FuncInCommand::Chatting_By_OorJ(objUser, objRoom, (unsigned int)client_sock, addr, clientaddr, buf, retval); // 채팅방 내에서의 채팅 함수
 	}
 	else // 방 생성 조건에 부합하지 않은 경우
 	{
 		if (!(tempMaxNum >= eCommand::MINNUMFORROOM && tempMaxNum <= eCommand::MAXNUMFORROOM)) // 방 최대 인원수가 잘못 입력된 경우
 		{
-			SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::CANTCREATEROOMBYNUM]);
+			SCommand::FuncInCommand::SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::CANTCREATEROOMBYNUM]);
 		}
 		else // 방 제목이 잘못 입력된 경우
 		{
-			SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::CANTCREATEROOMBYTITLE]);
+			SCommand::FuncInCommand::SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::CANTCREATEROOMBYTITLE]);
 		}
 	}
 }
 
-void SCommand::Command_ST_Func(unsigned int client_sock, vector<string>& tempBufSplit_Vec)
+void SCommand::Command_ST_RoomInfo(unsigned int client_sock, vector<string>& tempBufSplit_Vec)
 {
 	string flagStr = tempBufSplit_Vec[1].substr(0, tempBufSplit_Vec[1].size() - 1);
 
@@ -498,37 +503,13 @@ void SCommand::Command_ST_Func(unsigned int client_sock, vector<string>& tempBuf
 		// 입력받은 방 번호의 방이 존재할 경우
 		if (objServerManager.GetRoomInfoMap().size() >= tempRoomNum)
 		{
-			auto iter_objRoom = objServerManager.GetRoomInfoMap().begin();
-
-			for (int i = 0; i < tempRoomNum - 1; i++)
-			{
-				++iter_objRoom;
-			}
-
-			map<string, User>& temp_ParticipantList = iter_objRoom->second.GetParticipantMap();
-			auto iter_tempList = temp_ParticipantList.begin();
-
-			string tempStr = "";
-
-			// 방 정보(방 번호, 인원수, 최대 인원수, 방 이름)
-			tempStr = "[ " + to_string(iter_objRoom->second.GetRoomNumber()) + "]  "
-				+ "( " + to_string(iter_objRoom->second.GetParticipantNum()) + "/"
-				+ to_string(iter_objRoom->second.GetParticipantMaxNum()) + " )  "
-				+ iter_objRoom->second.GetRoomTitle() + "\n\r"
-				+ "개설시간:  \n\r";
-
-			// 참여자 정보(아이디, 참여시간)
-			for (int i = 0; i < temp_ParticipantList.size(); i++)
-			{
-				tempStr += "참여자: " + iter_tempList->second.GetID() + "            참여시간 :\n\r";
-			}
-
-			SendMessageToClient((unsigned int)client_sock, tempStr);
+			string tempStr = objServerManager.RoomInfo(tempRoomNum);
+			SCommand::FuncInCommand::SendMessageToClient((unsigned int)client_sock, tempStr);
 		}
 	}
 }
 
-void SCommand::Command_J_Func(vector<string>& tempBufSplit_Vec, User& objUser, unsigned int client_sock, char* addr, struct sockaddr_in clientaddr, char* buf, int retval)
+void SCommand::Command_J_JoinRoom(vector<string>& tempBufSplit_Vec, User& objUser, unsigned int client_sock, char* addr, struct sockaddr_in clientaddr, char* buf, int retval)
 {
 	string flagStr = tempBufSplit_Vec[1].substr(0, tempBufSplit_Vec[1].size() - 1);
 
@@ -552,11 +533,18 @@ void SCommand::Command_J_Func(vector<string>& tempBufSplit_Vec, User& objUser, u
 			// 방이 꽉 차지 않았다면
 			if (temp_objRoom.GetbFull())
 			{
+				time_t timer = time(NULL);
+				struct tm* objTM = localtime(&timer);
+				string currTimeStr = to_string(objTM->tm_hour) + ": " + to_string(objTM->tm_min) + ": " + to_string(objTM->tm_sec);
+
 				temp_objRoom.SetParticipantNum(temp_objRoom.GetParticipantNum() + 1);
-				temp_objRoom.GetParticipantMap().emplace(objUser.GetID(), objUser);
 				objUser.SetbInRoom(true);
 				objUser.SetRoomNumber(temp_objRoom.GetRoomNumber());
 				objUser.SetRoomTitle(temp_objRoom.GetRoomTitle());
+				objUser.SetJoinTime(currTimeStr);
+				temp_objRoom.GetParticipantMap().emplace(objUser.GetID(), objUser);
+
+				objServerManager.GetUserInfoMap().find(objUser.GetID())->second.SetbInRoom(true);
 
 				string tempStr = "** " + objUser.GetID() + "님이 들어오셨습니다. " + "(현재인원" + to_string(temp_objRoom.GetParticipantNum()) + "/ " + to_string(temp_objRoom.GetParticipantMaxNum()) + ")\n\r";
 				printf("%s:%d [%s] %s", addr, ntohs(clientaddr.sin_port), objUser.GetID().c_str(), buf);
@@ -565,57 +553,54 @@ void SCommand::Command_J_Func(vector<string>& tempBufSplit_Vec, User& objUser, u
 				for (auto iter_userInRoom = temp_objRoom.GetParticipantMap().begin(); iter_userInRoom != temp_objRoom.GetParticipantMap().end(); ++iter_userInRoom)
 				{
 					unsigned int tempUserSock = iter_userInRoom->second.GetSocket();
-					SendMessageToClient(tempUserSock, tempStr);
+					SCommand::FuncInCommand::SendMessageToClient(tempUserSock, tempStr);
 				}
 
-				Chatting_By_OorJ(objUser, temp_objRoom, (unsigned int)client_sock, addr, clientaddr, buf, retval); // 채팅방 내에서의 채팅 함수
+				SCommand::FuncInCommand::Chatting_By_OorJ(objUser, temp_objRoom, (unsigned int)client_sock, addr, clientaddr, buf, retval); // 채팅방 내에서의 채팅 함수
 			}
 			else
 			{
 				// 대화방이 꽉 찼다는 메시지 전송
-				SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::ROOMFULL]);
+				SCommand::FuncInCommand::SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::ROOMFULL]);
 			}
 		}
 	}
 }
 
-void SCommand::Command_PF_Func(vector<string>& tempBufSplit_Vec, unsigned int client_sock, User& objUser)
+void SCommand::Command_PF_UserInfo(vector<string>& tempBufSplit_Vec, unsigned int client_sock)
 {
 	// 유저에게 입력받은 ID
 	string tempUserID = tempBufSplit_Vec[1].substr(0, tempBufSplit_Vec[1].size() - 1);
+	auto iter_objUser = objServerManager.GetUserInfoMap().find(tempUserID);
 
 	// 접속자중 유저가 찾는 ID가 없을 경우
-	if (objServerManager.GetUserInfoMap().find(tempUserID) == objServerManager.GetUserInfoMap().end())
+	if (iter_objUser == objServerManager.GetUserInfoMap().end())
 	{
 		string tempStr = "** " + tempUserID + "님을 찾을 수 없습니다.\n\r";
-		SendMessageToClient(client_sock, tempStr);
+		SCommand::FuncInCommand::SendMessageToClient(client_sock, tempStr);
 	}
 	else // 접속자중 유저가 찾는 ID가 있을 경우
 	{
-		if (objUser.GetbInRoom()) // 해당 접속자가 채팅방에 입장해있는 경우
+		if (iter_objUser->second.GetbInRoom()) // 해당 접속자가 채팅방에 입장해있는 경우
 		{
 			string tempStr = "** " + tempUserID + "님은 현재 채팅방에 있습니다.\n\r";
 
-			tempStr += "** 접속지: "
-				+ objServerManager.GetUserInfoMap()[tempUserID].GetIP() + ":"
-				+ objServerManager.GetUserInfoMap()[tempUserID].GetPort() + "\n\r";
+			tempStr += objServerManager.UserInfo(tempUserID);
 
-			SendMessageToClient(client_sock, tempStr);
+			SCommand::FuncInCommand::SendMessageToClient(client_sock, tempStr);
 		}
 		else // 해당 접속자가 대기실에 있는 경우
 		{
 			string tempStr = "** " + tempUserID + "님은 현재 대기실에 있습니다.\n\r";
 
-			tempStr += "** 접속지: "
-				+ objServerManager.GetUserInfoMap()[tempUserID].GetIP() + ":"
-				+ objServerManager.GetUserInfoMap()[tempUserID].GetPort() + "\n\r";
+			tempStr += objServerManager.UserInfo(tempUserID);
 
-			SendMessageToClient(client_sock, tempStr);
+			SCommand::FuncInCommand::SendMessageToClient(client_sock, tempStr);
 		}
 	}
 }
 
-void SCommand::Command_TO_Func(vector<string>& tempBufSplit_Vec, unsigned int client_sock, User& objUser)
+void SCommand::Command_TO_Letter(vector<string>& tempBufSplit_Vec, unsigned int client_sock, User& objUser)
 {
 	// 유저에게 입력받은 ID
 	string tempRecvUserID = tempBufSplit_Vec[1];
@@ -623,12 +608,12 @@ void SCommand::Command_TO_Func(vector<string>& tempBufSplit_Vec, unsigned int cl
 	if (tempRecvUserID == objUser.GetID()) // 자기 자신에게 쪽지를 보내려고 하는 경우
 	{
 		// 해당 유저에게 자기 자신에게는 쪽지를 보낼 수 없다는 문구 전송
-		SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::CANNOTSENDME]);
+		SCommand::FuncInCommand::SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::CANNOTSENDME]);
 	}
 	else if (objServerManager.GetUserInfoMap().find(tempRecvUserID) == objServerManager.GetUserInfoMap().end()) // 접속해있지 않은 유저에게 쪽지를 보내려고 하는 경우
 	{
 		// 해당 유저에게 타켓 유저가 접속해있지 않다는 문구 전송
-		SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::CANNOTFINDUSER]);
+		SCommand::FuncInCommand::SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::CANNOTFINDUSER]);
 	}
 	else // 해당 유저가 접속해 있을 때
 	{
@@ -647,10 +632,10 @@ void SCommand::Command_TO_Func(vector<string>& tempBufSplit_Vec, unsigned int cl
 		}
 
 		// 쪽지 전송 정보 수신자와 송신자에게 모두 전송
-		SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::SENDLETTER]);
-		SendMessageToClient(objServerManager.GetUserInfoMap()[tempRecvUserID].GetSocket(), tempMessage);
+		SCommand::FuncInCommand::SendMessageToClient(client_sock, objPrintOrSend.sendMap[eSendMapKey::SENDLETTER]);
+		SCommand::FuncInCommand::SendMessageToClient(objServerManager.GetUserInfoMap()[tempRecvUserID].GetSocket(), tempMessage);
 
 		// 명렁어 H or X 정보 클라이언트에게 전송
-		SendMessageToClient(objServerManager.GetUserInfoMap()[tempRecvUserID].GetSocket(), objPrintOrSend.sendMap[eSendMapKey::FIRSTINFO]);
+		SCommand::FuncInCommand::SendMessageToClient(objServerManager.GetUserInfoMap()[tempRecvUserID].GetSocket(), objPrintOrSend.sendMap[eSendMapKey::FIRSTINFO]);
 	}
 }

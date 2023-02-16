@@ -46,12 +46,23 @@ map<string, User>& Room::GetParticipantMap()
 	return m_participantMap;
 }
 
-void Room::SetRoomInfo(int roomNumber, int participantNum, int participantMaxNum, const string& roomTitle)
+const string& Room::GetCreateTime()
+{
+	return m_createTime;
+}
+
+void Room::SetCreateTime(string& value)
+{
+	m_createTime = value;
+}
+
+void Room::SetRoomInfo(int roomNumber, int participantNum, int participantMaxNum, const string& roomTitle, const string& createTime)
 {
 	m_roomNumber = roomNumber;
 	m_participantNum = participantNum;
 	m_participantMaxNum = participantMaxNum;
 	m_roomTitle  = roomTitle;
+	m_createTime = createTime;
 }
 
 bool Room::GetbFull()

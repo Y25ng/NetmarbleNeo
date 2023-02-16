@@ -74,16 +74,20 @@ enum eSendMapKey
 
 namespace SCommand
 {
-	void Chatting_By_OorJ(User& objUser, Room& objRoom, unsigned int client_sock, char* addr, struct sockaddr_in clientaddr, char* buf, int retval);
+	namespace FuncInCommand
+	{
+		void Chatting_By_OorJ(User& objUser, Room& objRoom, unsigned int client_sock, char* addr, struct sockaddr_in clientaddr, char* buf, int retval);
+		void SendMessageToClient(SOCKET client_socket, string& message);
+	}
 
-	void Command_H_Func(unsigned int client_scok);
-	void Command_US_Func(unsigned int client_sock);
-	void Command_LT_Func(unsigned int client_sock);
-	void Command_O_Func(vector<string>& tempBufSplit_Vec, User& objUser, unsigned int client_sock, char* addr, struct sockaddr_in clientaddr, char* buf, int retval);
-	void Command_ST_Func(unsigned int client_sock, vector<string>& tempBufSplit_Vec);
-	void Command_J_Func(vector<string>& tempBufSplit_Vec, User& objUser, unsigned int client_sock, char* addr, struct sockaddr_in clientaddr, char* buf, int retval);
-	void Command_PF_Func(vector<string>& tempBufSplit_Vec, unsigned int client_sock, User& objUser);
-	void Command_TO_Func(vector<string>& tempBufSplit_Vec, unsigned int client_sock, User& objUser);
+	void Command_H_Guide(unsigned int client_scok);
+	void Command_US_LoginUserInfo(unsigned int client_sock);
+	void Command_LT_RoomList(unsigned int client_sock);
+	void Command_O_CreateRoom(vector<string>& tempBufSplit_Vec, User& objUser, unsigned int client_sock, char* addr, struct sockaddr_in clientaddr, char* buf, int retval);
+	void Command_ST_RoomInfo(unsigned int client_sock, vector<string>& tempBufSplit_Vec);
+	void Command_J_JoinRoom(vector<string>& tempBufSplit_Vec, User& objUser, unsigned int client_sock, char* addr, struct sockaddr_in clientaddr, char* buf, int retval);
+	void Command_PF_UserInfo(vector<string>& tempBufSplit_Vec, unsigned int client_sock);
+	void Command_TO_Letter(vector<string>& tempBufSplit_Vec, unsigned int client_sock, User& objUser);
 };
 
 

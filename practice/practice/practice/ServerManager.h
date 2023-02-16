@@ -18,16 +18,18 @@ public:
 
 	string LoginUsersList();
 	string RoomList();
-	string RoomInfo();
+	string RoomInfo(int roomNumber);
+	string UserInfo(string userID);
 
 	unordered_map<string, User>& GetUserInfoMap();
 	map<string, Room>& GetRoomInfoMap();
 
 	void UserQuitServer(User& objUser);
+	void DeleteUserInRoom(User& objUser);
 
 private:
 
-	unordered_map<string, User> m_userInfoMap; // key: ID, value: IP + port
-	map<string, Room> m_roomInfoMap;
+	unordered_map<string, User> m_userInfoMap; // key: ID, value: User Object
+	map<string, Room> m_roomInfoMap; // key: Room Title, value: Room Object
 
 };
