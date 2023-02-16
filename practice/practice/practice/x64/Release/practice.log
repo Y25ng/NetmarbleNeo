@@ -4,8 +4,8 @@
   User.cpp
   Util.cpp
   코드를 생성하고 있습니다.
-  324 of 872 functions (37.2%) were compiled, the rest were copied from previous compilation.
-    151 functions were new in current compilation
-    94 functions had inline decision re-evaluated but remain unchanged
+  669 of 881 functions (75.9%) were compiled, the rest were copied from previous compilation.
+    9 functions were new in current compilation
+    43 functions had inline decision re-evaluated but remain unchanged
   코드를 생성했습니다.
   practice.vcxproj -> C:\Users\kyeongnyeong.lee\Desktop\chat\NetmarbleNeo\practice\practice\x64\Release\practice.exe
